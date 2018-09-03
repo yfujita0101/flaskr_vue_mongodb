@@ -47,7 +47,7 @@ def all_posts():
         post_data = request.get_json()
         POSTS.append({
             'title': post_data.get('title'),
-            'body': post_data.get('author'),
+            'body': post_data.get('body'),
             'author_id': post_data.get('author_id'),
             'updated': datetime.now()
         })

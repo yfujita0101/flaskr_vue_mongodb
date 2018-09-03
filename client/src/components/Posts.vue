@@ -6,8 +6,7 @@
         <h1>Posts</h1>
         <hr><br><br>
         <alert :message="message" v-if="showMessage"></alert>
-        <alert :message="message" v-if="showMessage"></alert>
-        <button type="button" class="btn btn-success btn-sm">Add Posts</button>
+        <button type="button" class="btn btn-success btn-sm" v-b-modal.post-modal>Add Posts</button>
         <br><br>
         <div class="card-deck">
           <div v-for="(post, index) in posts" :key="index"
@@ -99,7 +98,7 @@ export default {
     addPost(payload) {
       const path = 'http://localhost:5000/posts';
       axios.post(path, payload)
-        .then((res) => {
+        .then(() => {
           this.getPosts();
           this.message = 'Post added';
           this.showMessage = true;
@@ -113,7 +112,22 @@ export default {
     initForm() {
       this.addPostFrom.title = '';
       this.addPostFrom.body = '';
-    }
+    },
+    onSubmit(evt) {
+      evt.preventDefault();
+      this.$refs.addPostModal.hide();
+      const payload = {
+        title: this.addPostFrom.title,
+        body: this.addPostFrom.body,
+      };
+      this.addPost(payload);
+      this.initForm();
+    },
+    onReset(evt) {
+      evt.preventDefault();
+      this.$refs.addPostModal.hide();
+      this.initForm();
+    },
   },
   created() {
     this.getPosts();
