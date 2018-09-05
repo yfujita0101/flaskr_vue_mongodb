@@ -13,7 +13,13 @@
                 class="card border-primay mb-6" style="width: 18rem;">
             <div class="card-header">{{ post.title }}</div>
             <div class="card-body text-primary">
-              <p class="card-text">{{ post.body }}</p>
+              <div class="card-text" v-html="replaceReturn(post.body)"></div>
+              <br/>
+              <p class="card-text text-right">
+                <small class="text-muted">
+                  updated {{ post.updated | moment("YYYY/MM/DD HH:mm:ss")}}
+                </small>
+              </p>
               <div class="text-right">
                 <button type="button"
                         class="btn btn-primary btn-sm"
@@ -28,11 +34,6 @@
                     delete
                   </button>
               </div>
-              <p class="card-text text-right">
-                <small class="text-muted">
-                  updated {{ post.updated | moment("YYYY/MM/DD hh:mm:ss")}}
-                </small>
-              </p>
             </div>
           </div>
         </div>
@@ -59,12 +60,13 @@
         <b-form-group id="form-body-group"
                       label="Body:"
                       label-for="form-body-input">
-          <b-form-input id="form-body-input"
-                        type="text"
+          <b-form-textarea id="form-body-input"
                         v-model="addPostFrom.body"
                         required
-                        placeholder="Enter content">
-          </b-form-input>
+                        placeholder="Enter content"
+                        :rows="3"
+                        :max-rows="6">
+          </b-form-textarea>
         </b-form-group>
         <b-button type="submit" variant="primary">Submit</b-button>
         <b-button type="reset" variant="danger">Reset</b-button>
@@ -90,12 +92,14 @@
         <b-form-group id="form-body-edit-group"
                       label="Body:"
                       label-for="form-body-edit-input">
-          <b-form-input id="form-body-edit-input"
-                        type="text"
-                        v-model="editPostForm.body"
-                        required
-                        placeholder="Enter content">
-          </b-form-input>
+            <b-form-textarea id="form-body-edit-input"
+                          type="text"
+                          v-model="editPostForm.body"
+                          required
+                          placeholder="Enter content"
+                          :rows="3"
+                          :max-rows="6">
+            </b-form-textarea>
         </b-form-group>
         <b-button type="submit" variant="primary">Update</b-button>
         <b-button type="reset" variant="danger">Cancel</b-button>
@@ -225,6 +229,9 @@ export default {
       evt.preventDefault();
       this.$refs.editPostModal.hide();
       this.getPosts();
+    },
+    replaceReturn(str) {
+      return str.replace(/\n/g, '<br />');
     },
   },
   created() {

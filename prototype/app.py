@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
-import uuid
+from db import get_db
+from bson.objectid import ObjectId
 
 # configuration
 DEBUG = True
@@ -14,82 +15,65 @@ app.config.from_object(__name__)
 # enable CORS
 CORS(app)
 
-# 画面に表示させる例
-
-POSTS = [
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'On the Road',
-        'body': 'Jack Kerouac',
-        'author_id': '1234',
-        'updated': datetime.now()
-    },
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'Harry Potter and the Philosopher\'s Stone',
-        'body': 'J. K. Rowling',
-        'author_id': '1234',
-        'updated': datetime.now()
-    },
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'Green Eggs and Ham',
-        'body': 'Dr. Seuss',
-        'author_id': '1234',
-        'updated': datetime.now()
-    }
-]
 
 @app.route('/posts', methods=['GET', 'POST'])
 def all_posts():
     response_object = { 'status': 'success'}
     if request.method == 'POST':
         post_data = request.get_json()
-        POSTS.append({
-            'id': uuid.uuid4().hex,
-            'title': post_data.get('title'),
-            'body': post_data.get('body'),
-            'author_id': post_data.get('author_id'),
-            'updated': datetime.now()
-        })
+        db = get_db()
+        post_id = db.post.insert({'title': post_data["title"], 'body': post_data["body"], 'updated': datetime.utcnow()})
         response_object['message']  = 'post added!'
     else:
-        response_object['posts'] = POSTS
+        response_object['posts'] = get_all_posts()
 
     return jsonify(response_object)
 
+
+def get_all_posts():
+    db = get_db()
+    posts = db.post.find()
+
+    results = []
+
+    # objectIDをstrにキャスト
+    for post in posts:
+        results.append({"id": str(post["_id"]), "title": post["title"], "body": post["body"],  "updated": post["updated"]})
+
+    return results
 
 @app.route('/posts/<post_id>', methods=['PUT', 'DELETE'])
 def single_post(post_id):
     response_object = {'status': 'success'}
 
     if request.method == 'PUT':
-        indexnum = ""
+        # payloadの値を取得
         post_data = request.get_json()
-        # indexの検索
-        for i, dic in enumerate(POSTS):
-            if dic["id"] == post_id:
-                index_num = i
+        title = post_data['title']
+        body = post_data['body']
 
-        # POSTSに修正
-        POSTS[index_num]["title"] = post_data.get('title')
-        POSTS[index_num]["body"] = post_data.get('body')
+        # post_id指定でupdate
+        db = get_db()
+        result = db.post.update_one({"_id": ObjectId(post_id)}, {'$set': {'title': title, 'body': body, 'updated': datetime.utcnow()}})
 
         response_object['message'] = 'post updated!'
 
     if request.method == 'DELETE':
-        remove_post(post_id)
-        response_object['message'] = 'post removed!'
+        result = remove_post(post_id)
+        if result:
+            response_object['message'] = 'post removed!'
+        else:
+            resuponse_object['message'] = 'post not removed!'
 
     return jsonify(response_object)
 
 
 def remove_post(post_id):
-    for post in POSTS:
-        if post['id'] == post_id:
-            POSTS.remove(post)
-            return True
-    return false
+    db = get_db()
+    result = db
+    result = db.post.delete_one(({"_id": ObjectId(post_id)}))
+
+    return result
 
 if __name__ == '__main__':
     app.run()
