@@ -203,10 +203,10 @@ export default {
     onSubmit(evt) {
       evt.preventDefault();
       this.$refs.addPostModal.hide();
-      const payload = {
-        title: this.addPostFrom.title,
-        body: this.addPostFrom.body,
-      };
+
+      const payload = new FormData();
+      payload.append('title', this.addPostFrom.title);
+      payload.append('body', this.addPostFrom.body);
       this.addPost(payload);
       this.initForm();
     },

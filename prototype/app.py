@@ -20,7 +20,7 @@ CORS(app)
 def all_posts():
     response_object = { 'status': 'success'}
     if request.method == 'POST':
-        post_data = request.get_json()
+        post_data = request.form
         db = get_db()
         post_id = db.post.insert({'title': post_data["title"], 'body': post_data["body"], 'updated': datetime.utcnow()})
         response_object['message']  = 'post added!'
