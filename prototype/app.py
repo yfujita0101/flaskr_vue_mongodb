@@ -1,8 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from datetime import datetime
-from db import get_db
+from werkzeug.utils import secure_filename
+import os
 from bson.objectid import ObjectId
+from db import get_db
 
 # configuration
 DEBUG = True
@@ -11,9 +13,28 @@ DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-
 # enable CORS
 CORS(app)
+
+# file saved path
+FILE_ROOT_PATH = os.getcwd() + "/images/"
+
+
+@app.route('/images/<post_id>', methods=['GET'])
+def image(post_id):
+    print(post_id)
+    file_path = FILE_ROOT_PATH + post_id
+
+    print(file_path)
+
+    # file拡張子取得
+    ext = str(file_path).split(".")[-1]
+    type = "image/" + ext
+
+    # return target image
+    f = open(file_path, 'rb')
+    image = f.read()
+    return Response(response=image, content_type=type)
 
 
 @app.route('/posts', methods=['GET', 'POST'])
@@ -23,6 +44,25 @@ def all_posts():
         post_data = request.form
         db = get_db()
         post_id = db.post.insert({'title': post_data["title"], 'body': post_data["body"], 'updated': datetime.utcnow()})
+
+        # file save
+        file_url = ''
+        filename = ''
+        if 'file' in request.files:
+            # make file save dir (use mongodb _id)
+            file_dir_path = os.path.join(FILE_ROOT_PATH, str(post_id))
+            os.makedirs(file_dir_path)
+
+            # file save
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(file_dir_path, filename))
+
+            # file url情報をmongodbに保存
+            file_url = "http://localhost:5000/images/" + str(post_id) + "/" + str(filename)
+
+        result = db.post.update_one({"_id": ObjectId(post_id)}, {'$set': {'file_url': file_url}})
+
         response_object['message']  = 'post added!'
     else:
         response_object['posts'] = get_all_posts()
@@ -36,9 +76,11 @@ def get_all_posts():
 
     results = []
 
-    # objectIDをstrにキャスト
-    for post in posts:
-        results.append({"id": str(post["_id"]), "title": post["title"], "body": post["body"],  "updated": post["updated"]})
+    #
+    if posts:
+        for post in posts:
+            results.append({"id": str(post["_id"]), "title": post["title"], "body": post["body"],  "updated": post["updated"], "file_url": post["file_url"]})
+
 
     return results
 
@@ -51,6 +93,7 @@ def single_post(post_id):
         post_data = request.get_json()
         title = post_data['title']
         body = post_data['body']
+
 
         # post_id指定でupdate
         db = get_db()

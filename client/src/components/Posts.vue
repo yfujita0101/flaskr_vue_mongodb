@@ -68,6 +68,12 @@
                         :max-rows="6">
           </b-form-textarea>
         </b-form-group>
+        <!-- image upload added -->
+        <b-form-group id="form-file-group"
+                      label="file:"
+                      label-for="form-file-input">
+          <input type="file" id="file" ref="file" v-on:change="handleFileUpload()"/>
+        </b-form-group>
         <b-button type="submit" variant="primary">Submit</b-button>
         <b-button type="reset" variant="danger">Reset</b-button>
       </b-form>
@@ -120,6 +126,7 @@ export default {
       addPostFrom: {
         title: '',
         body: '',
+        file: '',
       },
       editPostForm: {
         id: '',
@@ -147,7 +154,13 @@ export default {
     },
     addPost(payload) {
       const path = 'http://localhost:5000/posts';
-      axios.post(path, payload)
+      // eslint-disable-next-line
+      const config = {
+        headers: {
+          'content-type': 'multipart/form-data',
+        },
+      };
+      axios.post(path, payload, config)
         .then(() => {
           this.getPosts();
           this.message = 'Post added';
@@ -196,6 +209,7 @@ export default {
     initForm() {
       this.addPostFrom.title = '';
       this.addPostFrom.body = '';
+      this.addPostFrom.file = '';
       this.editPostForm.id = '';
       this.editPostForm.title = '';
       this.editPostForm.body = '';
@@ -203,10 +217,16 @@ export default {
     onSubmit(evt) {
       evt.preventDefault();
       this.$refs.addPostModal.hide();
+      // eslint-disable-next-line
+      let payload = new FormData();
 
-      const payload = new FormData();
       payload.append('title', this.addPostFrom.title);
       payload.append('body', this.addPostFrom.body);
+      payload.append('file', this.addPostFrom.file);
+
+      // eslint-disable-next-line
+      console.log(this.addPostFrom.file)
+
       this.addPost(payload);
       this.initForm();
     },
@@ -232,6 +252,9 @@ export default {
     },
     replaceReturn(str) {
       return str.replace(/\n/g, '<br />');
+    },
+    handleFileUpload() {
+      this.addPostFrom.file = this.$refs.file.files[0];
     },
   },
   created() {
