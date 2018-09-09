@@ -11,6 +11,9 @@
         <div class="card-columns">
           <div v-for="(post, index) in posts" :key="index"
                 class="card border-primay mb-6" style="width: 18rem;">
+            <div v-if="post.file_url">
+              <img class="card-img-top" v-bind:src='post.file_url' alt="Card image cap">
+            </div>
             <div class="card-header">{{ post.title }}</div>
             <div class="card-body text-primary">
               <div class="card-text" v-html="replaceReturn(post.body)"></div>
@@ -168,7 +171,7 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-          console.error(error);
+          console.log(error);
           this.getPosts();
         });
     },
@@ -223,9 +226,6 @@ export default {
       payload.append('title', this.addPostFrom.title);
       payload.append('body', this.addPostFrom.body);
       payload.append('file', this.addPostFrom.file);
-
-      // eslint-disable-next-line
-      console.log(this.addPostFrom.file)
 
       this.addPost(payload);
       this.initForm();

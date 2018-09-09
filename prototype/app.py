@@ -2,9 +2,11 @@ from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from datetime import datetime
 from werkzeug.utils import secure_filename
-import os
 from bson.objectid import ObjectId
 from db import get_db
+import os
+import shutil
+
 
 # configuration
 DEBUG = True
@@ -20,12 +22,14 @@ CORS(app)
 FILE_ROOT_PATH = os.getcwd() + "/images/"
 
 
-@app.route('/images/<post_id>', methods=['GET'])
-def image(post_id):
+@app.route('/images/<post_id>/<file_name>', methods=['GET'])
+def image(post_id, file_name):
     print(post_id)
+    # 画像保存パス
     file_path = FILE_ROOT_PATH + post_id
 
-    print(file_path)
+    file_path = os.path.join(file_path, file_name)
+
 
     # file拡張子取得
     ext = str(file_path).split(".")[-1]
@@ -102,7 +106,9 @@ def single_post(post_id):
         response_object['message'] = 'post updated!'
 
     if request.method == 'DELETE':
+        # mongodbから削除
         result = remove_post(post_id)
+
         if result:
             response_object['message'] = 'post removed!'
         else:
@@ -115,6 +121,10 @@ def remove_post(post_id):
     db = get_db()
     result = db
     result = db.post.delete_one(({"_id": ObjectId(post_id)}))
+
+    # 画像削除
+    file_dir = FILE_ROOT_PATH + post_id
+    shutil.rmtree(file_dir)
 
     return result
 
