@@ -94,14 +94,38 @@ def single_post(post_id):
 
     if request.method == 'PUT':
         # payloadの値を取得
+        post_data = request.form
+        db = get_db()
+
+        '''
         post_data = request.get_json()
         title = post_data['title']
         body = post_data['body']
-
+        '''
 
         # post_id指定でupdate
         db = get_db()
-        result = db.post.update_one({"_id": ObjectId(post_id)}, {'$set': {'title': title, 'body': body, 'updated': datetime.utcnow()}})
+        if 'file' in request.files and request.files['file'] != '':
+
+            # old fileの削除
+            remove_image(post_id)
+
+            # make file save dir (use mongodb _id)
+            file_dir_path = os.path.join(FILE_ROOT_PATH, str(post_id))
+            os.makedirs(file_dir_path)
+
+            # file save
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(file_dir_path, filename))
+
+            # file url情報をmongodbに保存
+            file_url = "http://localhost:5000/images/" + str(post_id) + "/" + str(filename)
+
+            result = db.post.update_one({"_id": ObjectId(post_id)}, {'$set': {'title': post_data["title"], 'body': post_data["body"], 'updated': datetime.utcnow(), "file_url": file_url }})
+
+        else:
+            result = db.post.update_one({"_id": ObjectId(post_id)}, {'$set': {'title': post_data["title"], 'body': post_data["body"], 'updated': datetime.utcnow()}})
 
         response_object['message'] = 'post updated!'
 
@@ -122,11 +146,22 @@ def remove_post(post_id):
     result = db
     result = db.post.delete_one(({"_id": ObjectId(post_id)}))
 
-    # 画像削除
+    # 画像保存パス
     file_dir = FILE_ROOT_PATH + post_id
-    shutil.rmtree(file_dir)
+
+    # 画像ディレクトリが損zないする場合は削除
+    if os.path.exists(file_dir):
+        # 画像削除
+        remove_image(post_id)
 
     return result
+
+def remove_image(post_id):
+    # 画像削除
+    file_dir = FILE_ROOT_PATH + post_id
+    if os.path.exists(file_dir):
+        shutil.rmtree(file_dir)
+
 
 if __name__ == '__main__':
     app.run()

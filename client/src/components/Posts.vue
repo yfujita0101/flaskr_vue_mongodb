@@ -71,7 +71,6 @@
                         :max-rows="6">
           </b-form-textarea>
         </b-form-group>
-        <!-- image upload added -->
         <b-form-group id="form-file-group"
                       label="file:"
                       label-for="form-file-input">
@@ -82,7 +81,7 @@
       </b-form>
     </b-modal>
 
-    <!-- edit post modal -->
+    <!-- editPost MOdal -->
     <b-modal ref="editPostModal"
               id="post-update-modal"
               title="Update"
@@ -110,6 +109,12 @@
                           :max-rows="6">
             </b-form-textarea>
         </b-form-group>
+        <!-- image upload added -->
+        <b-form-group id="form-file-edit-group"
+                      label="updateFile:"
+                      label-for="form-file-edit-input">
+          <input type="file" id="editFile" ref="editFile" v-on:change="handleEditFileUpload()"/>
+        </b-form-group>
         <b-button type="submit" variant="primary">Update</b-button>
         <b-button type="reset" variant="danger">Cancel</b-button>
       </b-form>
@@ -135,6 +140,7 @@ export default {
         id: '',
         title: '',
         body: '',
+        editFile: '',
       },
       message: '',
       showMessage: false,
@@ -233,12 +239,16 @@ export default {
     onSubmitUpdate(evt) {
       evt.preventDefault();
       this.$refs.editPostModal.hide();
-      const payload = {
-        id: this.editPostForm.id,
-        title: this.editPostForm.title,
-        body: this.editPostForm.body,
-      };
+
+      // eslint-disable-next-line
+      let payload = new FormData();
+
+      payload.append('title', this.editPostForm.title);
+      payload.append('body', this.editPostForm.body);
+      payload.append('file', this.editPostForm.editFile);
+
       this.updatePost(payload, this.editPostForm.id);
+      this.initForm();
     },
     onReset(evt) {
       evt.preventDefault();
@@ -255,6 +265,9 @@ export default {
     },
     handleFileUpload() {
       this.addPostFrom.file = this.$refs.file.files[0];
+    },
+    handleEditFileUpload() {
+      this.editPostForm.editFile = this.$refs.editFile.files[0];
     },
   },
   created() {
